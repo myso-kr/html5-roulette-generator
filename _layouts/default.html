@@ -271,6 +271,7 @@
 
 								ctx.save();
 								{
+									ctx.globalAlpha = 0.8;
 									ctx.translate(renderX, renderY);
 		    					ctx.rotate(Degrees.toRadians(degreesMin % 360));
 									ctx.strokeStyle = "#000000";
@@ -280,6 +281,7 @@
 						      ctx.arc(0, 0, 0, Degrees.toRadians(degreesMax), Degrees.toRadians(0), true);
 						      ctx.fill();
 						      ctx.stroke();
+						      ctx.globalAlpha = 0;
 						    }
 					      ctx.restore();
 
