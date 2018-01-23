@@ -102,7 +102,7 @@
 					if (this.finish && this.video && this.canvas && this.canvas.getContext) {
 						this.finish = false;
 						let min = 24 * 5;
-						let max = 24 * 10;
+						let max = 24 * 20;
 						this.frameRecord(Math.floor(Math.random() * (max - min + 1)) + min);
 					}
 				}
@@ -197,6 +197,16 @@
 		      {
 		      	let time = (new Date).toLocaleString('ko-KR', { timezone: 'UTC' });
   					ctx.fillStyle = "#000000";
+  					ctx.textAlign = "start";
+  					ctx.font = "12px Arial";
+						ctx.fillText(`추첨 시각 : ${time}`, 15 + 1, ch - 12 - 15 + 1);
+					}
+					ctx.restore();
+
+					ctx.save();
+		      {
+		      	let time = (new Date).toLocaleString('ko-KR', { timezone: 'UTC' });
+  					ctx.fillStyle = "#FFFFFF";
   					ctx.textAlign = "start";
   					ctx.font = "12px Arial";
 						ctx.fillText(`추첨 시각 : ${time}`, 15, ch - 12 - 15);
