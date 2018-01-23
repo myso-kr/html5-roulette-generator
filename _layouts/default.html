@@ -94,15 +94,15 @@
 
 				constructor(options = {}) {
 					this.finish = true;
-					this.recorder = new Whammy.Video(24);
+					this.recorder = new Whammy.Video(30);
 					this.canvas = options.canvas;
 					this.video = options.video;
 					this.values = (options.values || []).map((value)=>Object.assign({ label: '', weight: 1 }, value));
 					this.fillColors = options.fillColors || ["#B8D430", "#3AB745", "#029990", "#3501CB", "#2E2C75", "#673A7E", "#CC0071", "#F80120", "#F35B20", "#FB9A00", "#FFCC00", "#FEF200"];
 					if (this.finish && this.video && this.canvas && this.canvas.getContext) {
 						this.finish = false;
-						let min = 24 * 5;
-						let max = 24 * 20;
+						let min = 30 * 5;
+						let max = 30 * 20;
 						this.frameRecord(Math.floor(Math.random() * (max - min + 1)) + min);
 					}
 				}
@@ -117,7 +117,7 @@
 	    		// Canvas Background
     			ctx.save();
     			{
-	    			ctx.fillStyle = ctx.strokeStyle = '#FFFFFF'
+	    			ctx.fillStyle = ctx.strokeStyle = '#000000'
 	    			ctx.fillRect(0, 0, cw, ch);
 	    		}
     			ctx.restore();
