@@ -1,21 +1,242 @@
 <!doctype html>
 <html>
   <head>
-    <title>최원</title>
+    <title>HTML5 Roulette Generator :: 최원</title>
     <meta name="description" content="어플리케이션 기획/개발 프리랜서 360도 VR 미디어 크리에이터">
     <meta property="og:type" content="profile">
-    <meta property="og:title" content="최원">
+    <meta property="og:title" content="HTML5 Roulette Generator :: 최원">
     <meta property="og:description" content="어플리케이션 기획/개발 프리랜서 360도 VR 미디어 크리에이터">
     <meta property="og:url" content="https://myso-kr.github.io/html5-roulette-generator/">
     <meta property="og:image" content="https://avatars2.githubusercontent.com/u/1237913">
     <meta name="twitter:card" content="summary">
     <meta name="twitter:site" content="@cw4196">
-    <meta name="twitter:title" content="최원">
+    <meta name="twitter:title" content="HTML5 Roulette Generator :: 최원">
     <meta name="twitter:description" content="어플리케이션 기획/개발 프리랜서 360도 VR 미디어 크리에이터">
     <meta property="profile:first_name" content="Won">
     <meta property="profile:last_name" content="Choi">
+
+    <style>
+    	* { margin: 0; padding: 0; }
+    	html, body { height: 100%; min-width: 960px; }
+
+    	.container { height: 100%; display: flex; align-items: center; justify-content: center; }
+
+    	.section { height: 100%; width: 100%; padding: 8px; }
+    	.section-form form { display: flex; align-items: center; justify-content: center; flex-direction: column; height: 100%; }
+    	.section-form form .form-header { width:100%; max-width: 600px; margin-bottom: 8px; }
+    	.section-form form .form-body { width:100%; max-width: 600px; margin-bottom: 8px; }
+    	.section-form form .form-footer { width:100%; max-width: 600px;  }
+    	.section-form form .form-body textarea { width: 100%; height: 300px; resize: none; margin: 8; }
+    	.section-form form .form-footer button { width: 100%; padding: 15px; font-size: 16px; }
+
+    	.section-canvas { display: flex; align-items: center; justify-content: center; flex-direction: column; height: 100%; width: 600px; background: #000000; }
+    	.section-canvas canvas { position: absolute; z-index:-1; }
+  	</style>
   </head>
   <body>
-    init
+  	<div class="container">
+  		<div class="section section-form">
+				<form id="form">
+					<div class="form-header">
+						<h4>추첨 항목 입력</h4>
+					</div>
+					<div class="form-body">
+						<textarea id="values" placeholder="추첨 할 항목을 엔터로 구분하여 입력하세요."></textarea>
+					</div>
+					<div class="form-footer">
+						<button type="submit">레코딩 시작</button>
+					</div>
+				</form>
+			</div>
+			<div class="section section-canvas">
+				<div>
+					<canvas id="canvas" width="600" height="600"></canvas>
+					<video id="video" width="600" height="600"></video>
+				</div>
+			</div>
+  	</div>
+
+    <script type="text/javascript" src="assets/whammy.js"></script>
+    <script type="text/javascript">window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;</script>
+    <script type="text/javascript">
+    	class UtilNumber {
+				static padZero(str, len) {
+			    len = len || 2;
+			    var zeros = new Array(len).join('0');
+			    return (zeros + str).slice(-len);
+				}
+    	}
+    	class Radians {
+    		static toDegrees(radians){ return radians * 180 / Math.PI; }
+    	}
+    	class Degrees {
+    		static toRadians(degrees){ return degrees * Math.PI / 180; }
+    	}
+    	class Color {
+    		static invert(hex){
+			    if (hex.indexOf('#') === 0) {
+			        hex = hex.slice(1);
+			    }
+			    if (hex.length === 3) {
+			        hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+			    }
+			    if (hex.length !== 6) {
+			        throw new Error('Invalid HEX color.');
+			    }
+			    var r = (255 - parseInt(hex.slice(0, 2), 16)).toString(16),
+			        g = (255 - parseInt(hex.slice(2, 4), 16)).toString(16),
+			        b = (255 - parseInt(hex.slice(4, 6), 16)).toString(16);
+			    return '#' + UtilNumber.padZero(r) + UtilNumber.padZero(g) + UtilNumber.padZero(b);
+    		}
+    	}
+    	class RouletteCanvas {
+				static install(canvas) { return new RouletteCanvas(canvas); }
+
+				constructor(options = {}) {
+					this.finish = true;
+					this.recorder = new Whammy.Video(24);
+					this.canvas = options.canvas;
+					this.video = options.video;
+					this.values = (options.values || []).map((value)=>Object.assign({ label: '', weight: 1 }, value));
+					this.fillColors = options.fillColors || ["#B8D430", "#3AB745", "#029990", "#3501CB", "#2E2C75", "#673A7E", "#CC0071", "#F80120", "#F35B20", "#FB9A00", "#FFCC00", "#FEF200"];
+					if (this.finish && this.video && this.canvas && this.canvas.getContext) {
+						this.finish = false;
+						let min = 24 * 5;
+						let max = 24 * 10;
+						this.frameRecord(Math.floor(Math.random() * (max - min + 1)) + min);
+					}
+				}
+
+				frame(rotate = 0) {
+					let ctx = this.canvas.getContext('2d');
+					let cw = this.canvas.clientWidth;
+					let ch = this.canvas.clientHeight;
+					let cx = cw / 2;
+					let cy = ch / 2;
+					let ax = cw / 10;
+	    		// Canvas Background
+    			ctx.save();
+    			{
+	    			ctx.fillStyle = ctx.strokeStyle = '#FFFFFF'
+	    			ctx.fillRect(0, 0, cw, ch);
+	    		}
+    			ctx.restore();
+
+	    		// Draw Arrow
+    			ctx.save();
+    			{
+    				ctx.fillStyle = ctx.strokeStyle = '#FF0000'
+	    			ctx.beginPath();
+				    ctx.moveTo(cw - ax, cy);
+				    ctx.lineTo(cw, cy - 5);
+				    ctx.lineTo(cw, cy + 5);
+				    ctx.fill();
+				  }
+    			ctx.restore();
+
+	    		// Draw Panels
+	    		ctx.save();
+	    		{
+    				let weight_max = this.values.reduce((weights, value) => weights + value.weight, 0);
+    				let weight_val = (360 / weight_max);
+    				let weight_cur = 0;
+
+    				this.values.forEach((value, offset) => {
+    					{
+								let fillColor = this.fillColors[offset % this.fillColors.length];
+	    					let degreesS = value.degrees = ((weight_val * weight_cur) + rotate) % 360;
+    						let degreeeL = value.degrees_length = (weight_val * value.weight) % 360;
+
+    						let rw = cx - ax;
+    						let rx = cx;
+    						let ry = cy;
+    						if(this.values.length > 5) {
+    							rx = -(cw / 8);
+    							rw = (cx * 2) - rx - ax
+    						}
+    						if(this.values.length > 30) {
+    							rx = -(cw / 2);
+    							rw = (cw) - rx - ax
+    						}
+    						if(this.values.length > 100) {
+    							rx = -cw * 2;
+    							rw = cw - rx - ax
+    						}
+
+								ctx.save();
+								{
+									ctx.translate(rx, ry);
+		    					ctx.rotate(Degrees.toRadians(degreesS));
+									ctx.strokeStyle = ctx.fillStyle = value.fillColor || fillColor;
+									ctx.beginPath();
+						      ctx.arc(0, 0, rw, Degrees.toRadians(0), Degrees.toRadians(degreeeL));
+						      ctx.arc(0, 0, 0, Degrees.toRadians(degreeeL), Degrees.toRadians(0), true);
+						      ctx.stroke();
+						      ctx.fill();
+						    }
+					      ctx.restore();
+
+					      ctx.save();
+					      {
+		    					ctx.translate(rx, ry);
+		    					ctx.rotate(Degrees.toRadians(degreesS));
+		    					ctx.fillStyle = "#FFFFFF";
+		    					ctx.textAlign = "end";
+		    					ctx.font = "12px Arial";
+									ctx.fillText(value.label, rw - 3, 12 + 3);
+								}
+								ctx.restore();
+
+					      weight_cur = weight_cur + value.weight;
+    					}
+    				})
+				  }
+			    ctx.restore();
+
+			    ctx.save();
+		      {
+		      	let time = (new Date).toLocaleString('ko-KR', { timezone: 'UTC' });
+  					ctx.fillStyle = "#000000";
+  					ctx.textAlign = "start";
+  					ctx.font = "12px Arial";
+						ctx.fillText(`추첨 시각 : ${time}`, 15, ch - 12 - 15);
+					}
+					ctx.restore();
+					return ctx;
+				}
+
+				frameRecord(frameCountMax = 0, frameCount = 0) {
+					this.recorder.add(this.frame(frameCount * 13.3));
+					if(frameCount == 0 || (frameCount / frameCountMax < 1)) {
+						requestAnimationFrame(this.frameRecord.bind(this, frameCountMax, frameCount + 1));
+					} else {
+						requestAnimationFrame(this.frameRecordFinish.bind(this));
+					}
+				}
+				frameRecordFinish() {
+					this.recorder.compile(false, (output) => {
+						let url = (window.webkitURL || window.URL).createObjectURL(output);
+						this.videoRecordFinish(url);
+					});
+				}
+				videoRecordFinish(url) {
+					this.finish = true;
+					this.video.src = url;
+					this.video.play();
+				}
+			}
+    </script>
+    <script type="text/javascript">
+    	let form = document.getElementById('form');
+    	form.addEventListener('submit', (e) => {
+    		e.preventDefault();
+    		let text = document.getElementById('values').value
+    		RouletteCanvas.install({
+					video: document.getElementById('video'),
+					canvas: document.getElementById('canvas'),
+					values: text.split(/[\r\n]+/).map((label)=>({label: label.trim()}))
+				});
+    	});
+    </script>
   </body>
 </html>
